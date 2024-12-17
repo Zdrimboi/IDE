@@ -3,7 +3,6 @@ from PySide6.QtCore import Qt
 from editor import EditorTabs
 from fileexplorer import FileExplorerDock
 
-
 class IDEMainWindow(QMainWindow):
     def __init__(self):
         super().__init__()
@@ -42,7 +41,6 @@ class IDEMainWindow(QMainWindow):
 
     def _create_menu_bar(self):
         menu_bar = self.menuBar()
-
         # File Menu
         file_menu = menu_bar.addMenu("File")
         file_menu.addAction("Open")   # Placeholder action
