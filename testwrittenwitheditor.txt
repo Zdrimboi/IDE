@@ -1,7 +1,11 @@
 this is written using the editor.
 and this was saved using Ctrl + S
+ctrl + a works
 ctrl + z works
 ctrl + y works
 ctrl + x works
 ctrl + v works
 everything works.
+
+C:/Users/alexx/Desktop/Git_Repos/IDE/editor.py
+editor.py

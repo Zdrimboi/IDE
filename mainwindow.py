@@ -1,4 +1,5 @@
-from PySide6.QtWidgets import QMainWindow, QDockWidget, QPlainTextEdit, QListWidget
+import sys
+from PySide6.QtWidgets import QMainWindow, QDockWidget, QPlainTextEdit, QListWidget, QFileDialog
 from PySide6.QtCore import Qt
 from PySide6.QtGui import QKeySequence, QAction
 from editor import EditorTabs
@@ -46,23 +47,20 @@ class IDEMainWindow(QMainWindow):
         
         # File Menu
         file_menu = menu_bar.addMenu("File")
-
-        # Instead of adding a separate shortcut, rely on QKeySequence for actions:
-        open_action = QAction("Open", self)  # Placeholder for open dialog if needed
+        open_folder_action = QAction("Open Folder", self)
+        open_folder_action.triggered.connect(self._on_open_folder)
         save_action = QAction("Save", self)
         save_action.setShortcut(QKeySequence.Save)
         save_action.triggered.connect(self._on_save_file)
-
         exit_action = QAction("Exit", self)
         exit_action.triggered.connect(self.close)
 
-        file_menu.addAction(open_action)
+        file_menu.addAction(open_folder_action)
         file_menu.addAction(save_action)
         file_menu.addAction(exit_action)
 
         # Edit Menu
         edit_menu = menu_bar.addMenu("Edit")
-
         cut_action = QAction("Cut", self)
         cut_action.setShortcut(QKeySequence.Cut)
         cut_action.triggered.connect(self._on_cut)
@@ -89,6 +87,22 @@ class IDEMainWindow(QMainWindow):
         edit_menu.addSeparator()
         edit_menu.addAction(undo_action)
         edit_menu.addAction(redo_action)
+
+        # View Menu (toggle docks)
+        view_menu = menu_bar.addMenu("View")
+
+        toggle_file_explorer = QAction("Show File Explorer", self, checkable=True, checked=True)
+        toggle_file_explorer.triggered.connect(lambda checked: self._toggle_dock(self.file_explorer_dock, checked))
+        
+        toggle_outline = QAction("Show Outline", self, checkable=True, checked=True)
+        toggle_outline.triggered.connect(lambda checked: self._toggle_dock(self.outline_dock, checked))
+
+        toggle_terminal = QAction("Show Terminal", self, checkable=True, checked=True)
+        toggle_terminal.triggered.connect(lambda checked: self._toggle_dock(self.terminal_dock, checked))
+
+        view_menu.addAction(toggle_file_explorer)
+        view_menu.addAction(toggle_outline)
+        view_menu.addAction(toggle_terminal)
 
         # Settings Menu (placeholder)
         settings_menu = menu_bar.addMenu("Settings")
@@ -123,7 +137,17 @@ class IDEMainWindow(QMainWindow):
             editor.redo()
 
     def _on_tab_changed(self, index):
-        # When the user switches tabs, highlight that file in the file explorer
         file_path = self.editor_tabs.current_file_path()
         if file_path:
             self.file_explorer_dock.show_file_in_explorer(file_path)
+
+    def _on_open_folder(self):
+        directory = QFileDialog.getExistingDirectory(self, "Open Folder", "")
+        if directory:
+            self.file_explorer_dock.set_root_directory(directory)
+
+    def _toggle_dock(self, dock, show):
+        if show:
+            dock.show()
+        else:
+            dock.hide()
