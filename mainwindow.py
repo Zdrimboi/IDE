@@ -88,9 +88,8 @@ class IDEMainWindow(QMainWindow):
         edit_menu.addAction(undo_action)
         edit_menu.addAction(redo_action)
 
-        # View Menu (toggle docks)
+        # View Menu
         view_menu = menu_bar.addMenu("View")
-
         toggle_file_explorer = QAction("Show File Explorer", self, checkable=True, checked=True)
         toggle_file_explorer.triggered.connect(lambda checked: self._toggle_dock(self.file_explorer_dock, checked))
         

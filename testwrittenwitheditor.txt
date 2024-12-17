@@ -7,5 +7,6 @@ ctrl + x works
 ctrl + v works
 everything works.
 
+
 C:/Users/alexx/Desktop/Git_Repos/IDE/editor.py
 editor.py
