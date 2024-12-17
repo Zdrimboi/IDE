@@ -10,9 +10,7 @@ class FileExplorerDock(QDockWidget):
 
         self.model = QFileSystemModel()
         self.model.setRootPath(QDir.currentPath())
-        # Allow renaming
         self.model.setReadOnly(False)
-
         self.model.setFilter(QDir.AllEntries | QDir.NoDotAndDotDot | QDir.Files | QDir.Dirs)
 
         self.tree_view = QTreeView()
@@ -22,10 +20,9 @@ class FileExplorerDock(QDockWidget):
         self.tree_view.setColumnHidden(3, True)  # last modified date
         self.tree_view.setRootIndex(self.model.index(QDir.currentPath()))
 
-        # Allow editing items (for rename)
-        self.tree_view.setEditTriggers(QAbstractItemView.SelectedClicked | 
-                                       QAbstractItemView.EditKeyPressed | 
-                                       QAbstractItemView.DoubleClicked)
+        self.tree_view.setEditTriggers(
+            QAbstractItemView.SelectedClicked | QAbstractItemView.EditKeyPressed | QAbstractItemView.DoubleClicked
+        )
 
         self.tree_view.setContextMenuPolicy(Qt.CustomContextMenu)
         self.tree_view.doubleClicked.connect(self._on_file_double_clicked)
@@ -33,12 +30,10 @@ class FileExplorerDock(QDockWidget):
 
         self.setWidget(self.tree_view)
 
-        # Callable property for file double-click integration
         self.file_double_clicked = None
 
     def _on_file_double_clicked(self, index: QModelIndex):
         file_path = self.model.filePath(index)
-        # If it's a file (not a directory), open it
         if not self.model.isDir(index):
             if self.file_double_clicked:
                 self.file_double_clicked(file_path)
@@ -56,7 +51,6 @@ class FileExplorerDock(QDockWidget):
         rename_action = QAction("Rename", self)
         delete_action = QAction("Delete", self)
 
-        # Determine directory in which to create new files/folders
         file_is_dir = self.model.isDir(index)
         if file_is_dir:
             directory_path = file_path
@@ -84,7 +78,6 @@ class FileExplorerDock(QDockWidget):
                     pass
             except Exception as e:
                 QMessageBox.warning(self, "Error", f"Unable to create file:\n{e}")
-            # QFileSystemModel should update automatically
 
     def _create_new_folder(self, directory_path):
         folder_name, ok = QInputDialog.getText(self, "New Folder", "Enter new folder name:")
@@ -94,12 +87,9 @@ class FileExplorerDock(QDockWidget):
                 os.mkdir(new_folder_path)
             except Exception as e:
                 QMessageBox.warning(self, "Error", f"Unable to create folder:\n{e}")
-            # QFileSystemModel should update automatically
 
     def _rename_item(self, index):
-        # Put the item into edit mode so user can rename
         self.tree_view.edit(index)
-        # After the user confirms (presses Enter), QFileSystemModel attempts rename.
 
     def _delete_item(self, file_path):
         reply = QMessageBox.question(
@@ -107,17 +97,21 @@ class FileExplorerDock(QDockWidget):
             QMessageBox.Yes | QMessageBox.No, QMessageBox.No
         )
         if reply == QMessageBox.Yes:
-            index = self.model.index(file_path)
-            if self.model.isDir(index):
-                # Directory deletion: only if empty
+            if os.path.isdir(file_path):
                 if not os.listdir(file_path):
                     QDir().rmdir(file_path)
                 else:
                     QMessageBox.warning(self, "Error", "Directory is not empty.")
             else:
-                # File deletion
                 try:
                     os.remove(file_path)
                 except Exception as e:
                     QMessageBox.warning(self, "Error", f"Unable to delete file:\n{e}")
-            # Changes should appear automatically in the tree view
+
+    def show_file_in_explorer(self, file_path):
+        # Given a file_path, find it in the model and select it
+        if file_path and os.path.exists(file_path):
+            index = self.model.index(file_path)
+            if index.isValid():
+                self.tree_view.setCurrentIndex(index)
+                self.tree_view.scrollTo(index, QAbstractItemView.PositionAtCenter)
