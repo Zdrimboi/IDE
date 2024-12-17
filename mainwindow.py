@@ -1,9 +1,10 @@
 import sys
-from PySide6.QtWidgets import QMainWindow, QDockWidget, QPlainTextEdit, QListWidget, QFileDialog
+from PySide6.QtWidgets import QMainWindow, QDockWidget, QListWidget, QFileDialog
 from PySide6.QtCore import Qt
 from PySide6.QtGui import QKeySequence, QAction
 from editor import EditorTabs
 from fileexplorer import FileExplorerDock
+from terminal import TerminalDock
 
 class IDEMainWindow(QMainWindow):
     def __init__(self):
@@ -32,11 +33,8 @@ class IDEMainWindow(QMainWindow):
         self.outline_dock.setWidget(outline_list)
         self.addDockWidget(Qt.RightDockWidgetArea, self.outline_dock)
 
-        # Terminal at the bottom (placeholder)
-        self.terminal_dock = QDockWidget("Terminal", self)
-        self.terminal_dock.setAllowedAreas(Qt.BottomDockWidgetArea)
-        terminal = QPlainTextEdit(">>> ")
-        self.terminal_dock.setWidget(terminal)
+        # Terminal at the bottom
+        self.terminal_dock = TerminalDock(self)
         self.addDockWidget(Qt.BottomDockWidgetArea, self.terminal_dock)
 
         # Create the menu bar
