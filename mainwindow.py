@@ -1,10 +1,12 @@
-import sys
-from PySide6.QtWidgets import QMainWindow, QDockWidget, QListWidget, QFileDialog
+import os
+import shlex
+from PySide6.QtWidgets import QMainWindow, QDockWidget, QPlainTextEdit, QListWidget, QFileDialog
 from PySide6.QtCore import Qt
 from PySide6.QtGui import QKeySequence, QAction
 from editor import EditorTabs
 from fileexplorer import FileExplorerDock
 from terminal import TerminalDock
+from outline import OutlineDock  # <--- Import your OutlineDock
 
 class IDEMainWindow(QMainWindow):
     def __init__(self):
@@ -23,21 +25,15 @@ class IDEMainWindow(QMainWindow):
         self.file_explorer_dock.file_double_clicked = self.editor_tabs.open_file
         self.addDockWidget(Qt.LeftDockWidgetArea, self.file_explorer_dock)
 
-        # Outline on the right (placeholder)
-        self.outline_dock = QDockWidget("Outline", self)
-        self.outline_dock.setAllowedAreas(Qt.LeftDockWidgetArea | Qt.RightDockWidgetArea)
-        outline_list = QListWidget()
-        outline_list.addItem("Function: main()")
-        outline_list.addItem("Class: ExampleClass")
-        outline_list.addItem("def helper_function()")
-        self.outline_dock.setWidget(outline_list)
+        # Outline on the right
+        self.outline_dock = OutlineDock(self)
+        self.outline_dock.set_editor_tabs(self.editor_tabs)
         self.addDockWidget(Qt.RightDockWidgetArea, self.outline_dock)
 
         # Terminal at the bottom
         self.terminal_dock = TerminalDock(self)
         self.addDockWidget(Qt.BottomDockWidgetArea, self.terminal_dock)
 
-        # Create the menu bar
         self._create_menu_bar()
 
     def _create_menu_bar(self):
@@ -47,9 +43,11 @@ class IDEMainWindow(QMainWindow):
         file_menu = menu_bar.addMenu("File")
         open_folder_action = QAction("Open Folder", self)
         open_folder_action.triggered.connect(self._on_open_folder)
+        
         save_action = QAction("Save", self)
         save_action.setShortcut(QKeySequence.Save)
         save_action.triggered.connect(self._on_save_file)
+        
         exit_action = QAction("Exit", self)
         exit_action.triggered.connect(self.close)
 
@@ -86,6 +84,11 @@ class IDEMainWindow(QMainWindow):
         edit_menu.addAction(undo_action)
         edit_menu.addAction(redo_action)
 
+        # **Run** Menu
+        run_action = QAction("Run", self)
+        run_action.triggered.connect(self._on_run_file)
+        menu_bar.addAction(run_action)
+
         # View Menu
         view_menu = menu_bar.addMenu("View")
         toggle_file_explorer = QAction("Show File Explorer", self, checkable=True, checked=True)
@@ -101,12 +104,19 @@ class IDEMainWindow(QMainWindow):
         view_menu.addAction(toggle_outline)
         view_menu.addAction(toggle_terminal)
 
-        # Settings Menu (placeholder)
-        settings_menu = menu_bar.addMenu("Settings")
-        settings_menu.addAction("Preferences") # Placeholder action
+        # # Settings Menu (placeholder)
+        # settings_menu = menu_bar.addMenu("Settings")
+        # settings_menu.addAction("Preferences") # Placeholder action
+
+    def _on_tab_changed(self, index):
+        file_path = self.editor_tabs.current_file_path()
+        if file_path:
+            self.file_explorer_dock.show_file_in_explorer(file_path)
+        self.outline_dock.refresh_outline()
 
     def _on_save_file(self):
         self.editor_tabs.save_current_file()
+        self.outline_dock.refresh_outline()
 
     def _on_cut(self):
         editor = self.editor_tabs.current_editor()
@@ -133,11 +143,6 @@ class IDEMainWindow(QMainWindow):
         if editor:
             editor.redo()
 
-    def _on_tab_changed(self, index):
-        file_path = self.editor_tabs.current_file_path()
-        if file_path:
-            self.file_explorer_dock.show_file_in_explorer(file_path)
-
     def _on_open_folder(self):
         directory = QFileDialog.getExistingDirectory(self, "Open Folder", "")
         if directory:
@@ -148,3 +153,28 @@ class IDEMainWindow(QMainWindow):
             dock.show()
         else:
             dock.hide()
+
+    def _on_run_file(self):
+        file_path = self.editor_tabs.current_file_path()
+        if not file_path:
+            return  # No file to run
+
+        extension = os.path.splitext(file_path)[1].lower()
+
+        if extension == ".py":
+            # Use python + shlex.quote for safety
+            command = f"python {shlex.quote(file_path)}"
+            self.terminal_dock.execute_command(command)
+
+        elif extension == ".c":
+            # On Windows, produce "file.exe" output and run it
+            base_name = os.path.splitext(os.path.basename(file_path))[0]
+            # If using cmd.exe
+            command = (
+                f"gcc {shlex.quote(file_path)} -o {shlex.quote(base_name)}.exe "
+                f"&& .\\{base_name}.exe"
+            )
+            self.terminal_dock.execute_command(command)
+        else:
+            # Not recognized
+            pass

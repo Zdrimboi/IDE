@@ -16,13 +16,12 @@ class TerminalDock(QDockWidget):
         self.output_view = QPlainTextEdit()
         self.output_view.setReadOnly(True)
         self.output_view.appendPlainText(">>> ")
-        
+
         self.input_line = QLineEdit()
         self.input_line.returnPressed.connect(self.run_command)
 
         layout.addWidget(self.output_view)
         layout.addWidget(self.input_line)
-
         self.setWidget(container)
 
         self.process = QProcess(self)
@@ -43,11 +42,11 @@ class TerminalDock(QDockWidget):
         if not command:
             return
         self.input_line.clear()
+        self.execute_command(command)
 
-        # Move cursor to the end and insert the command
+    def execute_command(self, command: str):
         self.output_view.moveCursor(QTextCursor.End)
         self.output_view.insertPlainText("> " + command + "\n")
-
         self.process.start(self.shell_command[0], self.shell_command[1:] + [command])
 
     def on_read_output(self):
@@ -59,3 +58,24 @@ class TerminalDock(QDockWidget):
         self.output_view.moveCursor(QTextCursor.End)
         self.output_view.insertPlainText(">>> ")
         self.output_view.verticalScrollBar().setValue(self.output_view.verticalScrollBar().maximum())
+
+    def reset_terminal(self):
+        """Kill any running process, clear output, and re-initialize QProcess."""
+        # If a process is running, kill it
+        if self.process.state() == QProcess.Running:
+            self.process.kill()
+            self.process.waitForFinished(1000)
+
+        # Clear the output
+        self.output_view.clear()
+
+        # Re-create the prompt
+        self.output_view.appendPlainText(">>> ")
+        self.input_line.clear()
+
+        # Re-init QProcess connections
+        self.process = QProcess(self)
+        self.process.setProcessChannelMode(QProcess.MergedChannels)
+        self.process.readyReadStandardOutput.connect(self.on_read_output)
+        self.process.finished.connect(self.on_command_finished)
+        # shell_command remains the same (no need to reset)
